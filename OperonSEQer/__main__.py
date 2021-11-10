@@ -74,7 +74,7 @@ def get_args():
     p = configargparse.ArgParser(description='OperonSEQer')
     p.add('-c', '--coverage', required=True, help='scaled coverage file from RNA-seq', dest='covfile')
     p.add('-g', '--gff', required=True, help='modified gff file for organism (chr archive type start stop . strand . geneName)', dest='gff')
-    p.add('-o', '--output_name', required=True, help='output name',dest='out')
+    p.add('-o', '--output_name', required=True, help='output prefix',dest='out')
     p.add('-th', '--threshold', required=False, help='threshold for number of calls to become an operon (default is 3)',dest='thresh')
     p.add('-p', '--preds', required=False, help='prediction file', dest='preds')
     p.add('-k', '--pickleit', required=False, action='store_true', help='if true, saves the processed data as a pickle file', dest='pickleit')
