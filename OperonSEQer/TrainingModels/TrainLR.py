@@ -56,14 +56,14 @@ import numpy as np
 
 print('initial imports done')
 ##put together data frames
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_10.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 
 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -180,7 +180,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfh3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -248,8 +248,8 @@ X_train, X_test, y_train, y_test = format_data(df)
 print(X_train.head())
 #X_train, X_test, y_train, y_test = format_data(df)
 ##scale
-scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
-
+#scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
+scaler = sklearn.preprocessing.StandardScaler().fit(X_train)
 
 X_train2=pd.DataFrame(scaler.transform(X_train))
 X_train2.columns=X_train.columns
@@ -269,7 +269,85 @@ from sklearn.metrics import confusion_matrix
 
 import pickle
 
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
+
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
 import skopt
+
+
+from bayes_opt import BayesianOptimization
+
+# example of bayesian optimization (bayesian-optimization)
+# https://medium.com/shortcutnlp/07-hyperparameter-tuning-a-final-method-to-improve-model-accuracy-b98ba860f2a6
+from sklearn.model_selection import cross_validate
+
+def BODict(options):
+	n = len(options)
+	val = np.linspace(1/(2*n),(2*n-1) / (2*n),n) 
+	options = {options[x]: val[x] for x in range(n)}
+	return options
+	
+def Closest(l,k):
+	for i in range(len(l)-1):
+		if abs(l[i+1]-k) >= abs(l[i]-k):
+			return i
+		return -1
+
+def BOReturn(dic,val):
+	if isinstance(val,(float,int)):
+		val = list(dic.keys())[Closest(list(dic.values()),val)]
+	else:
+		val = dic[val]
+	return val
+
+def BOAFunction(functions,func):
+	#functions = BODict(['elu','relu','selu','sigmoid','tanh'])
+	func = BOReturn(functions,func)
+	return func
+# example of bayesian optimization (bayesian-optimization)
+# https://medium.com/shortcutnlp/07-hyperparameter-tuning-a-final-method-to-improve-model-accuracy-b98ba860f2a6
+from sklearn.model_selection import cross_validate
+
+penaltyDict = BODict(['l1', 'l2']) #probably relu for interior layers, final layer sigmoid (logistic) or tanh. 
+#solverDict = BODict(['lbfgs', 'sgd', 'adam']) #probably adam, or sgd potentially 
+#learning_rateDict = BODict(['constant', 'invscaling', 'adaptive'])
+
+def estimator(C, penalty):
+    # initialize model
+    penaltyIn=BOAFunction(penaltyDict, penalty)
+    model = LogisticRegression(multi_class='ovr', random_state=0, max_iter=5000, solver='liblinear', penalty=penaltyIn, C=C)
+    # set in cross-validation
+    result = cross_validate(model, X_train2, y_train, cv=10, n_jobs=-1)
+    # result is mean of test_score
+    return np.mean(result['test_score'])
+
+
+    
+print('define hyperparameters')
+hparams = {"C": (1e-9,100), "penalty":(0,1)}
+
+print('ready for optimizing')
+svc_bayesopt = BayesianOptimization(estimator, hparams)
+print('starting optimizer')
+
+svc_bayesopt.maximize(init_points=10, n_iter=30, acq='ucb')
+
+finTarget=svc_bayesopt.max['target']
+# finV=svc_bayesopt.X[arg][0]
+#finGamma=svc_bayesopt.X[arg][1]
+#finkernel=kernelDict[int(svc_bayesopt.X[arg][2])]
+# finTarget=svc_bayesopt.max['target']
+finC=svc_bayesopt.max['params']['C']
+finPtemp=svc_bayesopt.max['params']['penalty']
+finP=BOAFunction(penaltyDict,finPtemp)
+
+print('finC')
+print(finC)
+print('finP')
+print(finP)
+
 
 # Evaluate several ml models by training on training set and testing on testing set
 def trainSave(X_train, y_train, model, modelname):
@@ -307,12 +385,12 @@ def runModel(model, modelname, X_test, y_test):
 print('about to train')
 
 #model1 = LogisticRegression(multi_class='ovr', random_state=0, max_iter=5000, solver='liblinear', penalty='l1', n_jobs=-1)
-model2 = LogisticRegression(multi_class='ovr', random_state=0, max_iter=5000, solver='liblinear', penalty='l2', n_jobs=-1)
+model2 = LogisticRegression(multi_class='ovr', random_state=0, max_iter=5000, solver='liblinear', penalty=finP, C=finC)
 
 #trainSave(X_train2,y_train,model1, 'LogisticRegressionL1')
 #runModel(model1,'LogisticRegressionL1',X_test2,y_test)
 
-trainSave(X_train2,y_train,model2, 'LogisticRegressionL2')
-runModel(model2,'LogisticRegressionL2',X_test2,y_test)
+trainSave(X_train2,y_train,model2, 'LogisticRegression')
+runModel(model2,'LogisticRegression',X_test2,y_test)
 
 print('done')

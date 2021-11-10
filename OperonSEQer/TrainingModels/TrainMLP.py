@@ -3,16 +3,27 @@ import pandas as pd
 import numpy as np
 np.random.seed(42)
 import pickle
- 
+print('START MLP')
 # Matplotlib and seaborn for plotting
 #import matplotlib.pyplot as plt
 #%matplotlib inline
-print('START - MLP with bagging')
+
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 #import matplotlib
 #matplotlib.rcParams['font.size'] = 16
 #matplotlib.rcParams['figure.figsize'] = (9, 9)
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
 
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
+import skopt
+
+#import seaborn as sns
+
+#from IPython.core.pylabtools import figsize
 
 # Scipy helper functions
 from scipy.stats import percentileofscore
@@ -30,6 +41,9 @@ from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import BaggingClassifier
+
+from xgboost import XGBClassifier
 
 # Splitting data into training/testing
 from sklearn.model_selection import train_test_split
@@ -45,8 +59,6 @@ from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import BaggingClassifier
-
 
 # Metrics
 from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
@@ -56,39 +68,21 @@ import scipy
 import pandas as pd
 import numpy as np
 
-##for GPyOpt
-#Import Modules
-
-#GPyOpt - Cases are important, for some reason
-import GPyOpt
-from GPyOpt.methods import BayesianOptimization
-
-#numpy
-import numpy as np
-from numpy.random import multivariate_normal #For later example
-
-import pandas as pd
-
-#Plotting tools
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import numpy as np
-from numpy.random import multivariate_normal
+import pymc3 as pm
+print('initial imports done')
 
 ##put together data frames
 
 
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-# dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/testingML.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_10.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+# dfb2=pd.read_csv('testingML.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_10.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 # 
 # 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -205,7 +199,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfb3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -271,8 +265,8 @@ X_train, X_test, y_train, y_test = format_data(df)
 #print(X_train.head())
 #X_train, X_test, y_train, y_test = format_data(df)
 ##scale
-scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
-
+#scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
+scaler = sklearn.preprocessing.StandardScaler().fit(X_train)
 
 X_train2=pd.DataFrame(scaler.transform(X_train))
 X_train2.columns=X_train.columns
@@ -333,20 +327,6 @@ from sklearn.model_selection import cross_validate
 #learning_rateDict = BODict(['constant', 'invscaling', 'adaptive'])
 
 
-# def estimator(n_hidden_layers,n_neurons_per_layer,solver,activation,alpha,max_iter,learning_rate):
-#     # initialize model
-#     # create the hidden layers as a tuple with length n_layers and n_neurons per layer
-#     hidden_layer_sizes=(int(n_neurons_per_layer),)*int(n_hidden_layers)
-#     activation_convert=BOAFunction(activationDict,activation)
-#     solver_convert=BOAFunction(solverDict,solver)
-#     learning_rate_convert=BOAFunction(learning_rateDict,learning_rate)
-#     print('we are right befor model')
-#     model = MLPClassifier(solver=solver_convert, activation=activation_convert, alpha=alpha, hidden_layer_sizes=hidden_layer_sizes, max_iter=max_iter, learning_rate=learning_rate_convert)
-#     # set in cross-validation
-#     result = cross_validate(model, X_train2, y_train, cv=10)
-#     # result is mean of test_score
-#     return np.mean(result['test_score'])
-
 def estimator(parameters):
     print('we are printing parameters in BayesianOptimizationMLP_bagging.py')
     print(parameters)
@@ -358,8 +338,10 @@ def estimator(parameters):
     print('hidden layer sizes: ',hidden_layer_sizes)
     print('max iter: ',int(parameters[1]))
     print('alpha: ',parameters[0])
-    model = BaggingClassifier(MLPClassifier(solver='adam', activation='relu', alpha=parameters[0], hidden_layer_sizes=hidden_layer_sizes, max_iter=int(parameters[1])), max_samples=0.2, n_estimators=5, bootstrap=False, n_jobs=-1)
+    model = BaggingClassifier(MLPClassifier(solver='adam', activation='relu', alpha=parameters[0], hidden_layer_sizes=hidden_layer_sizes, max_iter=int(parameters[1])), max_samples=0.2, bootstrap=False, n_jobs=100)
     print('model set')
+    model.fit(X_train2, y_train)
+    print('model fit')
     # set in cross-validation
     result = cross_val_score(model, X_train2, y_train, cv=10, n_jobs=-1)
     # result is mean of test_score
@@ -385,7 +367,7 @@ def estimator(parameters):
 
 hparams = [
         {'name': 'alpha', 'type': 'continuous', 'domain': (1e-6, 1e-2)},
-        {'name':'max_iter', 'type': 'continuous', 'domain': (200, 5000)},
+        {'name':'max_iter', 'type': 'continuous', 'domain': (200, 1000)},
         {'name':'n_hidden_layers', 'type': 'continuous', 'domain': (1,4)},
         {'name':'n_neurons_per_layer', 'type': 'continuous', 'domain': (200,2000)}]
 
@@ -395,16 +377,16 @@ hparams = [
 from GPyOpt.methods import BayesianOptimization
 # give model and hyperparameter to optmizer
 #svc_bayesopt = BayesianOptimization(estimator, hparams)
-batch_size=10
-num_cores=10
+batch_size=50
+num_cores=50
 print('ABOUT TO DEFINE OPTIMIZER')
-svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP',acquisition_type='EI',batch_size=batch_size,num_cores=num_cores,acquisition_jitter=0.05,exact_feval=True,maximize=True)
+svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, batch_size=batch_size,num_cores=num_cores,acquisition_jitter=0.05,maximize=True)
 print('starting optimizer')
-svc_bayesopt.run_optimization(max_iter=20)
+svc_bayesopt.run_optimization(max_iter=10)
 print('plot 1')
-svc_bayesopt.plot_acquisition(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/MLPAcquisitionFULL')
+svc_bayesopt.plot_acquisition(filename='MLPAcquisitionFULL')
 print('plot 2')
-svc_bayesopt.plot_convergence(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/MLPConvergenceFULL')
+svc_bayesopt.plot_convergence(filename='MLPConvergenceFULL')
 #svc_bayesopt.maximize(init_points=2, n_iter=5, acq='ucb')
 
 #print(svc_bayesopt.max)
@@ -445,10 +427,12 @@ finMax=int(svc_bayesopt.X[arg][1])
 #print('finGamma')
 #print(finGamma)
 
-model = BaggingClassifier(MLPClassifier(solver='adam', activation='relu', alpha=finAlpha, hidden_layer_sizes=finHLS1, max_iter=finMax), max_samples=0.2, n_estimators=5, bootstrap=False, n_jobs=-1)
+model = BaggingClassifier(MLPClassifier(solver='adam', activation='relu', alpha=finAlpha, hidden_layer_sizes=finHLS1, max_iter=finMax), max_samples=0.2, n_estimators=5, bootstrap=False, n_jobs=100)
+
+
 #model=RandomForestClassifier(n_estimators=finEst, max_depth=finDep, min_samples_split=finSplit,n_jobs=-1)
 model.fit(X_train2, y_train)
-filename = 'MLP-BayesOp.p'
+filename = 'MLP-BayesO.p'
 pickle.dump(model, open(filename, 'wb'))
 predictions = model.predict(X_test2)
 accuracy = accuracy_score(y_test, predictions)
@@ -468,7 +452,7 @@ preds[model_name]=predictions
 final=X_test2
 final['MLP_preds']=preds['MLP']
 
-results.to_csv('MLPspecs_result.csv', sep='\t', index=False)
-final.to_csv('MLPspecs_predictions.csv', sep='\t', index=False)
+results.to_csv('MLP_result.csv', sep='\t', index=False)
+final.to_csv('MLP_predictions.csv', sep='\t', index=False)
 
 

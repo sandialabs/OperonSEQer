@@ -8,13 +8,16 @@ print('START RF')
 #import matplotlib.pyplot as plt
 #%matplotlib inline
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 #import matplotlib
 #matplotlib.rcParams['font.size'] = 16
 #matplotlib.rcParams['figure.figsize'] = (9, 9)
 
-import seaborn as sns
+#import seaborn as sns
 
-from IPython.core.pylabtools import figsize
+#from IPython.core.pylabtools import figsize
 
 # Scipy helper functions
 from scipy.stats import percentileofscore
@@ -59,14 +62,14 @@ import numpy as np
 import pymc3 as pm
 print('initial imports done')
 ##put together data frames
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 
 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -183,7 +186,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfh3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -270,84 +273,95 @@ from sklearn.metrics import confusion_matrix
 
 import pickle
 
-import skopt
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
 
-#from bayes_opt import BayesianOptimization
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
+import skopt
+from bayes_opt import BayesianOptimization
 
 # example of bayesian optimization (bayesian-optimization)
 # https://medium.com/shortcutnlp/07-hyperparameter-tuning-a-final-method-to-improve-model-accuracy-b98ba860f2a6
 from sklearn.model_selection import cross_validate
 
-# def estimator(n_estimators,max_depth, min_samples_split):
-#     # initialize model
-#     model = RandomForestClassifier(n_estimators=int(n_estimators), max_depth=int(max_depth), min_samples_split=int(min_samples_split),n_jobs=-1)
-#     # set in cross-validation
-#     result = cross_validate(model, X_train2, y_train, cv=10)
-#     # result is mean of test_score
-#     return np.mean(result['test_score'])
-
-def estimator(parameters):
-    print('estimator iteration start')
-    parameters=parameters[0]
-    n_estimators=int(parameters[0])
-    max_depth=int(parameters[1])
-    min_samples_split=int(parameters[2])
-    print(n_estimators)
-    print(max_depth)
-    print(min_samples_split)
-    model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, min_samples_split=min_samples_split, n_jobs=10)
-    print('model set')
+def estimator(n_estimators,max_depth, min_samples_split):
+    # initialize model
+    model = RandomForestClassifier(n_estimators=int(n_estimators), max_depth=int(max_depth), min_samples_split=int(min_samples_split),n_jobs=20)
     # set in cross-validation
-    #result = cross_val_score(model, X_train2, y_train, cv=10, n_jobs=-1)
     result = cross_validate(model, X_train, y_train, cv=10)
     # result is mean of test_score
-    print('estimator iteration end')
     return np.mean(result['test_score'])
-    #return np.mean(result)
+
+# def estimator(parameters):
+#     print('estimator iteration start')
+#     parameters=parameters[0]
+#     n_estimators=int(parameters[0])
+#     max_depth=int(parameters[1])
+#     min_samples_split=int(parameters[2])
+#     print(n_estimators)
+#     print(max_depth)
+#     print(min_samples_split)
+#     model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, min_samples_split=min_samples_split, n_jobs=10)
+#     print('model set')
+#     # set in cross-validation
+#     #result = cross_val_score(model, X_train2, y_train, cv=10, n_jobs=-1)
+#     result = cross_validate(model, X_train, y_train, cv=10)
+#     # result is mean of test_score
+#     print('estimator iteration end')
+#     return np.mean(result['test_score'])
+#     #return np.mean(result)
 
     
 #define hyperparametes
 #hparams = {"C": (0.1, 10), "gamma": (0.1, 10)}
 #RF
-#hparams = {"n_estimators": (10, 1000),"max_depth": (1, 150),"min_samples_split": (2, 10)}
-hparams=[{'name':'n_estimators', 'type':'continuous', 'domain': (10, 1000)},
-    {'name': 'max_depth', 'type': 'continuous', 'domain': (1, 150)},
-    {'name': 'min_samples_split', 'type': 'continuous', 'domain': (2, 10)}]
+hparams = {"n_estimators": (10, 1000),"max_depth": (1, 150),"min_samples_split": (2, 10)}
+#hparams=[{'name':'n_estimators', 'type':'continuous', 'domain': (10, 1000)},
+#    {'name': 'max_depth', 'type': 'continuous', 'domain': (1, 150)},
+#    {'name': 'min_samples_split', 'type': 'continuous', 'domain': (2, 10)}]
 
 #add optimizer
 print('ready for optimization')
-from GPyOpt.methods import BayesianOptimization
+#from GPyOpt.methods import BayesianOptimization
 # give model and hyperparameter to optmizer
-#svc_bayesopt = BayesianOptimization(estimator, hparams)
-batch_size=10
-num_cores=10
-svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP',acquisition_type='EI',batch_size=batch_size,num_cores=num_cores,exact_feval=True,evaluator_type = 'local_penalization')
-print('about to run optimizer')
-svc_bayesopt.run_optimization(max_iter=100,eps = 1e-8)
-print('optimizer done')
-svc_bayesopt.plot_acquisition(filename='/home/rkrishn/CERES/RFacquisition')
-print("plot 1 done")
-svc_bayesopt.plot_convergence(filename='/home/rkrishn/CERES/RFlinConvergence')
-print("plot 2 done")
+svc_bayesopt = BayesianOptimization(estimator, hparams)
+print('starting optimizer')
+
+svc_bayesopt.maximize(init_points=10, n_iter=20, acq='ucb')
+#batch_size=10
+#num_cores=10
+#svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP',acquisition_type='EI',batch_size=batch_size,num_cores=num_cores,exact_feval=True,evaluator_type = 'local_penalization')
+#print('about to run optimizer')
+#svc_bayesopt.run_optimization(max_iter=100)
+#print('optimizer done')
+#svc_bayesopt.plot_acquisition(filename='/home/rkrishn/CERES/RFacquisition')
+#print("plot 1 done")
+#svc_bayesopt.plot_convergence(filename='/home/rkrishn/CERES/RFlinConvergence')
+#print("plot 2 done")
 #svc_bayesopt.maximize(init_points=2, n_iter=5, acq='ucb')
 #print(svc_bayesopt.max)
 #y_bo = np.maximum.accumulate(-optimizer.Y).ravel()
-arg=np.argmax(svc_bayesopt.Y)
+#arg=np.argmax(svc_bayesopt.Y)
 
 #finTarget=svc_bayesopt.max['target']
-finEst=int(svc_bayesopt.X[arg][0])
-finDep=int(svc_bayesopt.X[arg][1])
-finSplit=int(svc_bayesopt.X[arg][2])
+#finEst=int(svc_bayesopt.X[arg][0])
+#finDep=int(svc_bayesopt.X[arg][1])
+#finSplit=int(svc_bayesopt.X[arg][2])
 
+finTarget=svc_bayesopt.max['target']
+# finV=svc_bayesopt.X[arg][0]
+#finGamma=svc_bayesopt.X[arg][1]
+#finkernel=kernelDict[int(svc_bayesopt.X[arg][2])]
+# finTarget=svc_bayesopt.max['target']
+finEst=int(svc_bayesopt.max['params']['n_estimators'])
+finDep=svc_bayesopt.max['params']['max_depth']
+finSplit=int(svc_bayesopt.max['params']['min_samples_split'])
 
-##print('finC')
-#print(finC)
-#print('finGamma')
-#print(finGamma)
 
 model=RandomForestClassifier(n_estimators=finEst, max_depth=finDep, min_samples_split=finSplit,n_jobs=10)
 model.fit(X_train, y_train)
-filename = 'RF-BayesOp.p'
+filename = 'RF.p'
 pickle.dump(model, open(filename, 'wb'))
 predictions = model.predict(X_test)
 accuracy = accuracy_score(y_test, predictions)

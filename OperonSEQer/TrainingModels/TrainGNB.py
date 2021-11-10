@@ -5,6 +5,13 @@ np.random.seed(42)
 import pickle
 
 print('START - Gaussian NB')
+
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
+
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
+import skopt
  
 # Matplotlib and seaborn for plotting
 #import matplotlib.pyplot as plt
@@ -60,18 +67,21 @@ import numpy as np
 print('initial imports done')
 
 #testing
-#dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/testingML.txt', delimiter = '\t')# Select only relevant variables
+#dfb2=pd.read_csv('testingML.txt', delimiter = '\t')# Select only relevant variables
 
 
 ##put together data frames
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfx2=pd.read_csv('SRR8550302_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfy2=pd.read_csv('SRR8550312_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfz2=pd.read_csv('SRR8550316_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 # 
 # 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -125,6 +135,8 @@ dfh[['KWp']]+=1e-300
 dfh[['KWAIp']]+=1e-300
 dfh[['KWBIp']]+=1e-300
 dfh[['KWABp']]+=1e-300
+
+
 # 
 # # 
 dfa[['log_KWp']] = np.log(dfa[['KWp']])
@@ -166,6 +178,7 @@ dfh[['log_KWp']] = np.log(dfh[['KWp']])
 dfh[['log_KWAIp']] = np.log(dfh[['KWAIp']])
 dfh[['log_KWBIp']] = np.log(dfh[['KWBIp']])
 dfh[['log_KWABp']] = np.log(dfh[['KWABp']])
+
 # 
 #dfftemp=dff.dropna()
 #dff=dfftemp
@@ -188,7 +201,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfb3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -255,8 +268,8 @@ print(X_train.head())
 print(len(X_train['Length1']))
 #X_train, X_test, y_train, y_test = format_data(df)
 ##scale
-scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
-
+#scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
+scaler = sklearn.preprocessing.StandardScaler().fit(X_test)
 
 X_train2=pd.DataFrame(scaler.transform(X_train))
 X_train2.columns=X_train.columns
@@ -334,9 +347,9 @@ svc_bayesopt.maximize(init_points=10, n_iter=100, acq='ucb')
 # svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP',acquisition_type='EI',batch_size=batch_size,num_cores=num_cores,acquisition_jitter=0.05,exact_feval=True,maximize=True)
 # svc_bayesopt.run_optimization(max_iter=100)
 # print('plot 1')
-# svc_bayesopt.plot_acquisition(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/GaussianNBAcquisitionFULL')
+# svc_bayesopt.plot_acquisition(filename='GaussianNBAcquisitionFULL')
 # print('plot 2')
-# svc_bayesopt.plot_convergence(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/GaussianNBConvergenceFULL')
+# svc_bayesopt.plot_convergence(filename='GaussianNBConvergenceFULL')
 # #print(svc_bayesopt.max)
 # arg=np.argmax(svc_bayesopt.Y)
 

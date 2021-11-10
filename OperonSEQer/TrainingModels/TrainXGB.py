@@ -3,17 +3,27 @@ import pandas as pd
 import numpy as np
 np.random.seed(42)
 import pickle
-
-print('START - XGB')
- 
+print('START XGB')
 # Matplotlib and seaborn for plotting
 #import matplotlib.pyplot as plt
 #%matplotlib inline
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 #import matplotlib
 #matplotlib.rcParams['font.size'] = 16
 #matplotlib.rcParams['figure.figsize'] = (9, 9)
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
 
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
+import skopt
+
+#import seaborn as sns
+
+#from IPython.core.pylabtools import figsize
 
 # Scipy helper functions
 from scipy.stats import percentileofscore
@@ -48,8 +58,6 @@ from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import BaggingClassifier
-
 
 # Metrics
 from sklearn.metrics import mean_squared_error, mean_absolute_error, median_absolute_error
@@ -59,21 +67,22 @@ import scipy
 import pandas as pd
 import numpy as np
 
+import pymc3 as pm
 print('initial imports done')
 
 #testing
-#dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/testingML.txt', delimiter = '\t')# Select only relevant variables
+#dfb2=pd.read_csv('testingML.txt', delimiter = '\t')# Select only relevant variables
 
 
 ##put together data frames
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 # 
 # 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -190,7 +199,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfa3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -218,6 +227,7 @@ def format_data(df):
     # Targets are final grade of student
     import sklearn
     labels = df['pred']
+    labels = labels.round(0).astype(int)
     df2=df.drop(columns=['pred'])
     #print(df)
     #print(df['SMRT'])
@@ -294,9 +304,9 @@ dtest = xgb.DMatrix(X_test2, label=y_test)
 
 def estimator(max_depth,gamma,learning_rate,n_estimators):
     # initialize model
-    model = XGBClassifier(max_depth=int(max_depth),gamma=gamma,learning_rate=learning_rate,n_estimators=int(n_estimators), nthread=100)
+    model = XGBClassifier(max_depth=int(max_depth),gamma=gamma,learning_rate=learning_rate,n_estimators=int(n_estimators), nthread=10, use_label_encoder=False)
     # set in cross-validation
-    result = cross_val_score(model, X_train, y_train, cv=10, n_jobs=100)
+    result = cross_val_score(model, X_train, y_train, cv=10, n_jobs=10)
     #result = cross_validate(model, X_train2, y_train, cv=10)
     # result is mean of test_score
     #return np.mean(result['test_score'])
@@ -343,9 +353,9 @@ svc_bayesopt.maximize(init_points=10, n_iter=20, acq='ucb')
 # svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP',acquisition_type='EI',batch_size=batch_size,num_cores=num_cores,acquisition_jitter=0.05,exact_feval=True,maximize=True)
 # svc_bayesopt.run_optimization(max_iter=100)
 # print('plot 1')
-# svc_bayesopt.plot_acquisition(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/GaussianNBAcquisitionFULL')
+# svc_bayesopt.plot_acquisition(filename='GaussianNBAcquisitionFULL')
 # print('plot 2')
-# svc_bayesopt.plot_convergence(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/GaussianNBConvergenceFULL')
+# svc_bayesopt.plot_convergence(filename='GaussianNBConvergenceFULL')
 # #print(svc_bayesopt.max)
 # arg=np.argmax(svc_bayesopt.Y)
 
@@ -367,8 +377,8 @@ finEst=int(svc_bayesopt.max['params']['n_estimators'])
 #print('finKernel')
 #print(finKernel)
 
-model=XGBClassifier(max_depth=int(max_depth),gamma=gamma,learning_rate=learning_rate,n_estimators=int(n_estimators), nthread=100)#model=sklearn.svm.SVC(C=finC, gamma=finGamma, degree=1, random_state=0,kernel='linear')
-model.fit(X_train2, y_train)
+model=XGBClassifier(max_depth=int(finDepth),gamma=finGamma,learning_rate=finLearn,n_estimators=int(finEst), nthread=10)#model=sklearn.svm.SVC(C=finC, gamma=finGamma, degree=1, random_state=0,kernel='linear')
+model.fit(X_train, y_train)
 filename = 'XGBoost-BayesOpNoSc.p'
 pickle.dump(model, open(filename, 'wb'))
 predictions = model.predict(X_test)
@@ -386,7 +396,7 @@ preds = {}
 results.loc[model_name, :] = [accuracy, precision, recall, specificity, f1]
 preds[model_name]=predictions
 
-final=X_test2
+final=X_test
 final['XGBoost_preds']=preds['XGBoostNoSc']
 
 results.to_csv('XGBoost_resultNoSc.csv', sep='\t', index=False)

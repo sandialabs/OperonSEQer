@@ -5,6 +5,13 @@ np.random.seed(42)
 import pickle
 
 print('START - SVM not linear with bagging')
+import sklearn.utils.fixes
+from numpy.ma import MaskedArray
+
+sklearn.utils.fixes.MaskedArray = MaskedArray
+
+import skopt
+
  
 # Matplotlib and seaborn for plotting
 #import matplotlib.pyplot as plt
@@ -59,18 +66,18 @@ import numpy as np
 print('initial imports done')
 
 #testing
-#dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/testingML.txt', delimiter = '\t')# Select only relevant variables
+#dfb2=pd.read_csv('testingML.txt', delimiter = '\t')# Select only relevant variables
 
 
 ##put together data frames
-dfa2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfb2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfc2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfd2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfe2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dff2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfg2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
-dfh2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfa2=pd.read_csv('BpseuK96243_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfb2=pd.read_csv('CdiffR20291_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfc2=pd.read_csv('Synec7002_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfd2=pd.read_csv('EcoliMG1655_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfe2=pd.read_csv('Selon7942_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dff2=pd.read_csv('Synec6803_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfg2=pd.read_csv('SaureUSA300_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
+dfh2=pd.read_csv('Bsubt3610_mergedInts_pred_st_20.txt', delimiter = '\t')# Select only relevant variables
 # 
 # 
 dfa=dfa2[['Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp','strandMatch','pred']]
@@ -187,7 +194,7 @@ frames = [dfa3, dfb3, dfc3, dfd3, dfe3, dff3, dfg3, dfh3]
 df = pd.concat(frames)
 # df = dfb3
 ###BELOW FOR ONE DATA FRAME
-#df2=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
+#df2=pd.read_csv('Allno7002_mergedLite_pred_st.txt', delimiter = '\t')# Select only relevant variables
 #print(df2.columns)
 #category_df = df2.select_dtypes('object')
 #print(category_df)
@@ -254,7 +261,8 @@ print(X_train.head())
 print(len(X_train['Length1']))
 #X_train, X_test, y_train, y_test = format_data(df)
 ##scale
-scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
+#scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_train)
+scaler = sklearn.preprocessing.StandardScaler().fit(X_train)
 
 
 X_train2=pd.DataFrame(scaler.transform(X_train))
@@ -304,11 +312,11 @@ def estimator(parameters):
     #print(int(parameters[2]))
     #kernel=kernelDict[int(parameters[2])]
     #model = sklearn.svm.SVC(C=C, gamma=gamma, degree=1, random_state=0,kernel='linear')
-    model = BaggingClassifier(sklearn.svm.SVC(C=C, gamma=gamma, kernel='rbf', probability=True), max_samples=0.1, n_estimators=10, bootstrap=False, n_jobs=10)
+    model = BaggingClassifier(sklearn.svm.SVC(C=C, gamma=gamma, kernel='rbf', probability=True), max_samples=0.1, n_estimators=10, bootstrap=False)
     print('model set')
     #print(kernel)
     # set in cross-validation
-    result = cross_val_score(model, X_train2, y_train, cv=5, n_jobs=10)
+    result = cross_val_score(model, X_train2, y_train, cv=5, n_jobs=50)
     # result is mean of test_score
     print('estimator iteration end')
     #return np.mean(result['test_score'])
@@ -336,9 +344,9 @@ svc_bayesopt = BayesianOptimization(f=estimator, domain=hparams, model_type='GP'
 print('starting optimizer')
 svc_bayesopt.run_optimization(max_iter=100)
 print('plot 1')
-svc_bayesopt.plot_acquisition(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SVMrbfAcquisitionFULL')
+svc_bayesopt.plot_acquisition(filename='SVMrbfAcquisitionFULL')
 print('plot 2')
-svc_bayesopt.plot_convergence(filename='/home/rkrishn/projects/CERES/Raga/Operons/RNAseq/all/SVMrbfConvergenceFULL')
+svc_bayesopt.plot_convergence(filename='SVMrbfConvergenceFULL')
 #print(svc_bayesopt.max)
 arg=np.argmax(svc_bayesopt.Y)
 
@@ -358,7 +366,7 @@ print(finGamma)
 #print('finKernel')
 #print(finKernel)
 
-model=BaggingClassifier(sklearn.svm.SVC(C=finC, gamma=finGamma, kernel='rbf', probability=True), max_samples=0.1, n_estimators=10, bootstrap=False, n_jobs=10)
+model=BaggingClassifier(sklearn.svm.SVC(C=finC, gamma=finGamma, kernel='rbf', probability=True), max_samples=0.1, n_estimators=10, bootstrap=False, n_jobs=50)
 #model=sklearn.svm.SVC(C=finC, gamma=finGamma, degree=1, random_state=0,kernel='linear')
 model.fit(X_train2, y_train)
 filename = 'SVM-rbf-BayesOp.p'
