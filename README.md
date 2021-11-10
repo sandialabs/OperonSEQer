@@ -13,7 +13,7 @@ See setup.py file for specific requirements (they will be automatically installe
 
 It is highly recommended to install OperonSEQer in a virtual environment such as conda:
 
-**conda create -n OperonSEQer_env python=3.7**
+**conda create -n OperonSEQer_env python=3.9**
 
 **conda activate OperonSEQer_env**
 
