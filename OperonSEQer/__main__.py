@@ -74,10 +74,11 @@ def get_args():
     p = configargparse.ArgParser(description='OperonSEQer')
     p.add('-c', '--coverage', required=True, help='scaled coverage file from RNA-seq', dest='covfile')
     p.add('-g', '--gff', required=True, help='modified gff file for organism (chr archive type start stop . strand . geneName)', dest='gff')
+    p.add('-o', '--output_name', required=True, help='output name',dest='out')
+    p.add('-th', '--threshold', required=False, help='threshold for number of calls to become an operon (default is 3)',dest='thresh')
     p.add('-p', '--preds', required=False, help='prediction file', dest='preds')
     p.add('-k', '--pickleit', required=False, action='store_true', help='if true, saves the processed data as a pickle file', dest='pickleit')
     p.add('-t', '--path', required=False, help='optional folder path where input files are and output files go (if not specified, current directory is used)', dest='path')
-    p.add('-o', '--output_name', required=True, help='output name',dest='out')
     run_args = p.parse_args()
     return run_args
 
@@ -656,7 +657,10 @@ def main():
         for i in models:
             files.append(str(args.path)+str(args.out)+'_'+str(i)+'_predictions.csv')
         voting(files,str(args.path))
-        OperonMulti(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
+        if args.thresh:
+            OperonMulti(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=int(args.thresh), deli='tab')
+        else:
+            OperonMulti(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
     else:
         print('No path specified, data files are in the root folder')
         extractCoverage(str(args.covfile), str(args.gff))
@@ -672,7 +676,10 @@ def main():
         for i in models:
             files.append(str(args.out)+'_'+str(i)+'_predictions.csv')
         voting(files)
-        OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
+        if args.thresh:
+            OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=int(args.thresh), deli='tab')
+        else:
+            OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
         print('Program complete')
 
 if __name__ == "__main__":
