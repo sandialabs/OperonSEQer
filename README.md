@@ -19,6 +19,8 @@ It is highly recommended to install OperonSEQer in a virtual environment such as
 
 **cd \path\to\cloned\repository**
 
+**pip install -r requirements.txt**
+
 **python setup.py install**
 
 Note: If you are having trouble downloading dependencies through setup.py (due to firewall or proxy), manually download the modules listed under install_requires, comment out the install_requires list and uncomment the empty install_requiers list
