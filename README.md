@@ -19,16 +19,18 @@ It is highly recommended to install OperonSEQer in a virtual environment such as
 
 **cd \path\to\cloned\repository**
 
-**python setup.py install**
+**pip install -r requirements.txt**
 
-Note: If you are having trouble downloading dependencies through setup.py (due to firewall or proxy), manually download the modules listed under install_requires, comment out the install_requires list and uncomment the empty install_requiers list
+**pip install .**
+
+Note: If you are having trouble downloading dependencies through pip install (due to firewall or proxy), manually download the modules listed in the requirements file
 
 ## Quick Start
 
 **python OperonSEQer -h**
 
 ~~~
-usage: OperonSEQer [-h] -c COVFILE -g GFF [-p PREDS] [-k] [-t PATH]
+usage: OperonSEQer [-h] -c COVFILE -g GFF [-p PREDS] [-k] [-t PATH] -o OUT
 
 OperonSEQer
 

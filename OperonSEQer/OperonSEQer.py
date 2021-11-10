@@ -76,16 +76,15 @@ def CI(a):
 
 if __name__ == '__main__':
 
-	if len (sys.argv) < 3 :
-		print("Usage: python OperonSEQer.py -i input_data_file [-p]\nNumber of arguements is " + str(len(sys.argv)))
-		sys.exit (1)
-	p = configargparse.ArgParser(description='run a model on data with or wihtout existing predictions ')
-	p.add('-i', required=True, help='input file',dest='file')
-	p.add('-p', required=False, help='predictions in file',dest='pred',action='store_true') 
+    if len (sys.argv) < 3 :
+        print("Usage: python OperonSEQer.py -i input_data_file [-p]\nNumber of arguements is " + str(len(sys.argv)))
+        sys.exit (1)
+    p = configargparse.ArgParser(description='run a model on data with or wihtout existing predictions ')
+    p.add('-i', required=True, help='input file',dest='file')
+    p.add('-p', required=False, help='predictions in file',dest='pred',action='store_true') 
 
-	args=p.parse_args()
-
-
+    args=p.parse_args()
+	
     dfa2=pd.read_csv(input, delimiter = '\t')# Select only relevant variables
     dfb=dfa2.dropna(subset=['Length1'])
     dfa2=dfb
