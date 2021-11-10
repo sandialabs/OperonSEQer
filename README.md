@@ -30,21 +30,19 @@ Note: If you are having trouble downloading dependencies through pip install (du
 **python OperonSEQer -h**
 
 ~~~
-usage: OperonSEQer [-h] -c COVFILE -g GFF [-p PREDS] [-k] [-t PATH] -o OUT
+usage: OperonSEQer [-h] -c COVFILE -g GFF -o OUT [-p PREDS] [-k] [-t PATH]
 
 OperonSEQer
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -c COVFILE, --coverage COVFILE
-                        scaled coverage file from RNA-seq
-  -g GFF, --gff GFF     modified gff file for organism (chr archive type start
-                        stop . strand . geneName)
-  -p PREDS, --preds PREDS
-                        prediction file (optional)
-  -k, --pickleit        if true, saves the processed data as a pickle file
-  -t PATH, --path PATH  optional folder path where input files are and output
-                        files go (if not specified, current directory is used)
+  -h, --help                      show this help message and exit
+  -c COVFILE, --coverage COVFILE  scaled coverage file from RNA-seq
+  -g GFF, --gff GFF               modified gff file for organism (chr archive type start stop . strand . geneName)
+  -o OUT, --output_name OUT       output prefix
+  -t THRESH, --threshold THRESH   threshold for number of calls to become an operon (default is 3)
+  -p PREDS, --preds PREDS         prediction file (optional)
+  -k, --pickleit                  if true, saves the processed data as a pickle file
+  -t PATH, --path PATH            optional folder path where input files are and output files go (if not specified, current directory is used)
 ~~~
 
 ## Example
