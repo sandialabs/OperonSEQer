@@ -1,7 +1,7 @@
 import os
 from setuptools import setup
 
-install_requires = ['pandas==0.23.4','numpy==1.16','configargparse','seaborn==0.9.0','scipy==1.1.0','scikit-learn==0.20.1','matplotlib', 'xgboost==1.2.0', 'pyinstaller==3.6']
+install_requires = ['pandas==1.3','numpy==1.21.2','configargparse','seaborn==0.11.2','scipy==1.7.1','scikit-learn==1.0','matplotlib==3.4.3', 'xgboost==1.4.2', 'pyinstaller==3.6']
 #install_requires=[]
 
 setup(
