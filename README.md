@@ -30,19 +30,20 @@ Note: If you are having trouble downloading dependencies through pip install (du
 **python OperonSEQer -h**
 
 ~~~
-usage: OperonSEQer [-h] -c COVFILE -g GFF -o OUT [-p PREDS] [-k] [-t PATH]
+usage: OperonSEQer [-h] -c COVFILE -g GFF -o OUT [-p PREDS] [-k] [-t PATH] [-d DELIMITER]
 
 OperonSEQer
 
 optional arguments:
-  -h, --help                      show this help message and exit
-  -c COVFILE, --coverage COVFILE  scaled coverage file from RNA-seq
-  -g GFF, --gff GFF               modified gff file for organism (chr archive type start stop . strand . geneName)
-  -o OUT, --output_name OUT       output prefix
-  -t THRESH, --threshold THRESH   threshold for number of calls to become an operon (default is 3)
-  -p PREDS, --preds PREDS         prediction file (optional)
-  -k, --pickleit                  if true, saves the processed data as a pickle file
-  -t PATH, --path PATH            optional folder path where input files are and output files go (if not specified, current directory is used)
+  -h, --help                          show this help message and exit
+  -c COVFILE, --coverage COVFILE      scaled coverage file from RNA-seq
+  -g GFF, --gff GFF                   modified gff file for organism (chr archive type start stop . strand . geneName)
+  -o OUT, --output_name OUT           output prefix
+  -t THRESH, --threshold THRESH       threshold for number of calls to become an operon (default is 3)
+  -p PREDS, --preds PREDS             prediction file (optional)
+  -k, --pickleit                      if true, saves the processed data as a pickle file
+  -t PATH, --path PATH                optional folder path where input files are and output files go (if not specified, current directory is used)
+  -d DELIMITER, --delimiter DELIMITER optional delimiter for gff file (if not specified, tab is assumed)
 ~~~
 
 ## Example
@@ -57,7 +58,7 @@ In the folder ExampleFiles, the following input files are provided as an example
 
 Use the following to obtain output files from the example:
 
-python OperonSEQer -c SRR10775302_sort.cov -g Escherichia_coli_mg1655_lite.txt -p MicrobesOnline_Operon_Ecoli_MG1655.txt -k [-t if you want to specify an output path please do so]
+python OperonSEQer -c SRR10775302_sort.cov -g Escherichia_coli_mg1655_lite.txt -p MicrobesOnline_Operon_Ecoli_MG1655.txt -k -d space [-t if you want to specify an output path please do so]
 
 ## Expected output files
 
