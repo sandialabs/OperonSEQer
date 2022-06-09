@@ -683,4 +683,4 @@ def main():
         print('Program complete')
 
 if __name__ == "__main__":
-    __main__()
+    main()
