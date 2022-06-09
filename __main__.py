@@ -38,6 +38,7 @@ from sklearn.ensemble import BaggingClassifier
 # Splitting data into training/testing
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import scale
 #print('still importing')
 
@@ -79,13 +80,14 @@ def get_args():
     p.add('-p', '--preds', required=False, help='prediction file', dest='preds')
     p.add('-k', '--pickleit', required=False, action='store_true', help='if true, saves the processed data as a pickle file', dest='pickleit')
     p.add('-t', '--path', required=False, help='optional folder path where input files are and output files go (if not specified, current directory is used)', dest='path')
+    p.add('-d', '--delimiter', required=False, help='optional argument with the delimiter [tab, space or comma] of the gff file (if not specified, tab is assumed)', dest='deli')
     run_args = p.parse_args()
     return run_args
 
     
-def extractCoverage(covfile, gff, path=None):
+def extractCoverage(covfile, gff, outfileName, path=None):
     '''
-    extract coverage given a coverage file (from bedtools, for example) and a gff file
+    extract coverage given a coverage file (from bedtools, for example) and a gff file (outfileName is the name of the output file you specify)
     '''
     with open(covfile,"r") as f:
         reader = csv.reader(f, delimiter="\t")
@@ -227,9 +229,9 @@ def extractCoverage(covfile, gff, path=None):
             	data.append([rna[a][8],rna[a+1][8],meanA,sdA,meanB,sdB,meanMid,sdMid,dist_genes,strand_a,strand_b,len(covA),len(covB),len(covMid),test[0],test[1],testAI[0],testAI[1],testBI[0],testBI[1],testAB[0],testAB[1]])
             #length.append([len(covA),len(covB),len(covMid)])
     if path!=None:
-        outfile=str(path)+str(args.out)+'_Data_CoverageExtracted.txt'
+        outfile=str(path)+str(outfileName)+'_Data_CoverageExtracted.txt'
     else:
-        outfile=str(args.out)+'_Data_CoverageExtracted.txt'
+        outfile=str(outfileName)+'_Data_CoverageExtracted.txt'
     #print(outfile)
     header=['']
     with open(outfile, 'w') as writeFile:
@@ -239,9 +241,9 @@ def extractCoverage(covfile, gff, path=None):
 
 #2) merge predicitons
 
-def mergePreds(input, pred, path=None):
+def mergePreds(input, pred, outfileName, path=None):
     '''
-    with a prediction file in the format Gene1\tGene2\tPrediction, merge with output of coverage extraction
+    with a prediction file in the format Gene1\tGene2\tPrediction, merge with output of coverage extraction (outfileName is the name of the output file you specify)
     '''
     with open(input,"r") as f:
         reader = csv.reader(f, delimiter="\t")
@@ -260,15 +262,15 @@ def mergePreds(input, pred, path=None):
     
     merged_inner = pd.merge(df, df2, how='left', left_on=['SysName1','SysName2'], right_on=['SysName1','SysName2'])
     if path!=None:
-        outfile=str(path)+str(args.out)+'_Data_predsMerged.txt'
+        outfile=str(path)+str(outfileName)+'_Data_predsMerged.txt'
         merged_inner.to_csv(outfile, sep='\t')
     else:
-        merged_inner.to_csv(str(args.out)+'_Data_predsMerged.txt', sep='\t')
+        merged_inner.to_csv(str(outfileName)+'_Data_predsMerged.txt', sep='\t')
 
 #3) format data
     
 
-def formatData(input, pred, pickleit=True, path=None):
+def formatData(input, outfileName, pred, pickleit=True, path=None):
     '''
     format the data by log transforming p values and dropping NA
     '''
@@ -293,11 +295,11 @@ def formatData(input, pred, pickleit=True, path=None):
     if pred==True:
         df['pred'] = df['pred'].fillna(0)
     if path!=None:
-        filename=str(path)+str(args.out)+'_Data_Formatted.p'
-        outfile=str(path)+str(args.out)+'_Data_Formatted.txt'
+        filename=str(path)+str(outfileName)+'_Data_Formatted.p'
+        outfile=str(path)+str(outfileName)+'_Data_Formatted.txt'
     else:
-        filename=str(args.out)+'_Data_Formatted.p'
-        outfile=str(args.out)+'_Data_Formatted.txt'
+        filename=str(outfileName)+'_Data_Formatted.p'
+        outfile=str(outfileName)+'_Data_Formatted.txt'
     if pickleit==True:
         pickle.dump(df, open(filename, "wb"))
     df.to_csv(outfile, sep='\t')
@@ -314,7 +316,7 @@ def CI(a):
     return st.t.interval(0.95, len(a)-1, loc=np.mean(a), scale=st.sem(a))
 
 
-def OperonSEQer(input, pred, path=None):
+def OperonSEQer(input, outfileName, pred, path=None):
     '''
     run the data through ML models 
     '''
@@ -388,7 +390,8 @@ def OperonSEQer(input, pred, path=None):
     ##scale
     X_test2=X_test.copy()
     X_test2.columns=X_test.columns
-    scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_test)
+    #scaler = sklearn.preprocessing.MinMaxScaler(feature_range = (0, 1)).fit(X_test)
+    scaler = sklearn.preprocessing.StandardScaler().fit(X_test)
     X_test3=pd.DataFrame(scaler.transform(X_test))
     X_test3.columns=X_test.columns
 
@@ -457,6 +460,9 @@ def OperonSEQer(input, pred, path=None):
             #print(statsDF)
             means=statsDF.mean(axis=0)
             CIs=statsDF[cols].apply(CI)
+            #print(CIs.iloc[[0]].values.tolist()[0])
+            #for a in CIs:
+            #    print(a)
             if (model_name=='XGB') or (model_name == 'RF'):
                 predictions = model2.predict(X_test2)
                 lr_probs = model2.predict_proba(X_test2)
@@ -508,8 +514,10 @@ def OperonSEQer(input, pred, path=None):
         if pred==True:
             results = pd.DataFrame(columns=['accuracy', 'precision','recall','specificity','f1'], index = model_list)
             results.loc['means'] = means.tolist()
-            results.loc['lower CI'] = [a_tuple[0] for a_tuple in CIs]
-            results.loc['upper CI'] = [a_tuple[1] for a_tuple in CIs]
+            #results.loc['lower CI'] = [a_tuple[0] for a_tuple in CIs]
+            #results.loc['upper CI'] = [a_tuple[1] for a_tuple in CIs]
+            results.loc['lower CI'] = CIs.iloc[[0]].values.tolist()[0]
+            results.loc['upper CI'] = CIs.iloc[[1]].values.tolist()[0]
             results.index.name = ''
             results.dropna(inplace=True)
             results.reset_index(inplace=True)
@@ -523,11 +531,11 @@ def OperonSEQer(input, pred, path=None):
         final[str(model_name)+'_preds']=preds[model_name]
         final.drop(columns=['A'], inplace=True)
         if path!=None:
-            nameRes=str(path)+str(args.out)+'_'+str(model_name)+'_result.csv'
-            namePred=str(path)+str(args.out)+'_'+str(model_name)+'_predictions.csv'
+            nameRes=str(path)+str(outfileName)+'_'+str(model_name)+'_result.csv'
+            namePred=str(path)+str(outfileName)+'_'+str(model_name)+'_predictions.csv'
         else:
-            nameRes=str(args.out)+'_'+str(model_name)+'_result.csv'
-            namePred=str(args.out)+'_'+str(model_name)+'_predictions.csv'            
+            nameRes=str(outfileName)+'_'+str(model_name)+'_result.csv'
+            namePred=str(outfileName)+'_'+str(model_name)+'_predictions.csv'            
         if pred==True:
             results.to_csv(nameRes, sep='\t', index=False)
         final.to_csv(namePred, sep='\t', index=False)
@@ -535,7 +543,7 @@ def OperonSEQer(input, pred, path=None):
 
 #5) voting
 
-def voting(files, path=None):
+def voting(files, outfileName, path=None):
     '''
     use result from OperonSEQer to get a voting tally for each operon pair
     '''
@@ -586,12 +594,12 @@ def voting(files, path=None):
     dfm2['six'] = np.where(dfm2['sum']>= 6, 1, 0)
     
     if path!=None:  
-        dfm2.to_csv(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', sep='\t', index=False)
+        dfm2.to_csv(str(path)+str(outfileName)+'_OperonSEQer_vote_result.csv', sep='\t', index=False)
     else:
-        dfm2.to_csv(str(args.out)+'_OperonSEQer_vote_result.csv', sep='\t', index=False)
+        dfm2.to_csv(str(outfileName)+'_OperonSEQer_vote_result.csv', sep='\t', index=False)
 
 
-def OperonMulti(predfile, outname, threshold=3, deli='tab'):
+def OperonMulti(predfile, outname, gff, threshold=3, deli='tab'):
     '''
     thread operons together
     '''
@@ -602,25 +610,25 @@ def OperonMulti(predfile, outname, threshold=3, deli='tab'):
     thresh=threshdict[threshold]
     operons = preds[["SysName1", "SysName2", thresh]]
     operons.columns=['Gene1','Gene2','pred']
-    if args.deli=='tab':
-        gff=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Genome/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.37_lite.txt', sep='\t', header=None)
-    elif args.deli=='comma':
-        gff=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Genome/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.37_lite.txt', sep=',', header=None)
-    elif args.deli=='space':
-        gff=pd.read_csv('/home/rkrishn/projects/CERES/Raga/Genome/Escherichia_coli_str_k_12_substr_mg1655.ASM584v2.37_lite.txt', sep=' ', header=None)
+    if deli=='tab':
+        gff=pd.read_csv(gff, sep='\t', header=None)
+    elif deli=='comma':
+        gff=pd.read_csv(gff, sep=',', header=None)
+    elif deli=='space':
+        gff=pd.read_csv(gff, sep=' ', header=None)
     genelist=list(gff.iloc[:, 8])
     multioperons={}
     n=0
     a=0
-    print(len(genelist))
+    #print(len(genelist))
     while a < len(genelist)-1:
         inoperon=1
         templist=[genelist[a]]
         while inoperon==1:
             subset=operons[operons['Gene1'].str.match(genelist[a])]
             if not subset.empty:
-                if len(subset['pred'])!=1:
-                    print('oops two')
+                #if len(subset['pred'])!=1:
+                    #print('oops two')
                 if subset.iloc[0]['pred']==0:
                     inoperon=0
                     a+=1
@@ -646,41 +654,53 @@ def main():
     if args.path:
         extractCoverage(str(args.path)+str(args.covfile), str(args.path)+str(args.gff), str(args.path))
         if args.preds:
-            mergePreds(str(args.path)+str(args.out)+'_Data_CoverageExtracted.txt', str(args.path)+str(args.preds), str(args.path))
-            formatData(str(args.path)+str(args.out)+'_Data_predsMerged.txt', pred=True, pickleit=True, path=str(args.path))
-            OperonSEQer(str(args.path)+str(args.out)+'_Data_Formatted.txt', pred=True, path=str(args.path))
+            mergePreds(str(args.path)+str(args.out)+'_Data_CoverageExtracted.txt', str(args.path)+str(args.preds), str(args.out), str(args.path))
+            formatData(str(args.path)+str(args.out)+'_Data_predsMerged.txt', str(args.out), pred=True, pickleit=True, path=str(args.path))
+            OperonSEQer(str(args.path)+str(args.out)+'_Data_Formatted.txt', str(args.out), pred=True, path=str(args.path))
         else:
-            formatData(str(args.path)+str(args.out)+'_Data_CoverageExtracted.txt', pred=False, pickleit=True, path=str(args.path))
-            OperonSEQer(str(args.path)+str(args.out)+'_Data_Formatted.txt', pred=False, path=str(args.path))
+            formatData(str(args.path)+str(args.out)+'_Data_CoverageExtracted.txt', str(args.out), pred=False, pickleit=True, path=str(args.path))
+            OperonSEQer(str(args.path)+str(args.out)+'_Data_Formatted.txt', str(args.out), pred=False, path=str(args.path))
         models=['XGB','MLP','SVM','RF','LR','GNB']
         files=[]
         for i in models:
             files.append(str(args.path)+str(args.out)+'_'+str(i)+'_predictions.csv')
         voting(files,str(args.path))
         if args.thresh:
-            OperonMulti(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=int(args.thresh), deli='tab')
+            if args.deli:
+                OperonMulti(str(args.path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=int(args.thresh), deli=str(args.deli))
+            else:
+                OperonMulti(str(args.path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=int(args.thresh), deli='tab')
         else:
-            OperonMulti(str(path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
+            if args.deli:
+                OperonMulti(str(args.path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=3, deli=str(args.deli))
+            else:
+                OperonMulti(str(args.path)+str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=3, deli='tab')
     else:
         print('No path specified, data files are in the root folder')
-        extractCoverage(str(args.covfile), str(args.gff))
+        extractCoverage(str(args.covfile), str(args.gff), str(args.out))
         if args.preds:
-            mergePreds(str(args.out)+'_Data_CoverageExtracted.txt', str(args.preds))
-            formatData(str(args.out)+'_Data_predsMerged.txt', pred=True, pickleit=True)
-            OperonSEQer(str(args.out)+'_Data_Formatted.txt', pred=True)
+            mergePreds(str(args.out)+'_Data_CoverageExtracted.txt', str(args.preds), str(args.out))
+            formatData(str(args.out)+'_Data_predsMerged.txt', str(args.out), pred=True, pickleit=True)
+            OperonSEQer(str(args.out)+'_Data_Formatted.txt', str(args.out), pred=True)
         else:
-            formatData(str(args.out)+'_Data_CoverageExtracted.txt', pred=False, pickleit=True)
-            OperonSEQer(str(args.out)+'_Data_Formatted.txt', pred=False)
+            formatData(str(args.out)+'_Data_CoverageExtracted.txt', str(args.out), pred=False, pickleit=True)
+            OperonSEQer(str(args.out)+'_Data_Formatted.txt', str(args.out), pred=False)
         models=['XGB','MLP','SVM','RF','LR','GNB']
         files=[]
         for i in models:
             files.append(str(args.out)+'_'+str(i)+'_predictions.csv')
-        voting(files)
+        voting(files, str(args.out))
         if args.thresh:
-            OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=int(args.thresh), deli='tab')
+            if args.deli:
+                OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=int(args.thresh), deli=str(args.deli))
+            else:
+                OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=int(args.thresh), deli='tab')
         else:
-            OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), threshold=3, deli='tab')
+            if args.deli:
+                OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=3, deli=str(args.deli))
+            else:
+                OperonMulti(str(args.out)+'_OperonSEQer_vote_result.csv', str(args.out), str(args.gff), threshold=3, deli='tab')
         print('Program complete')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
