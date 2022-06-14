@@ -9,6 +9,8 @@ OperonSEQer takes RNA-sequencing data and transforms to output a Kruskal-Wallis 
 OperonSEQer is designed to be run on Linux or Mac platforms and requires Python 3.7 or greater. 
 See setup.py file for specific requirements (they will be automatically installed if the protocol below is followed, but can also be installed manually)
 
+NOTE: The Random Forest model is too large to add to this repo. Please request to download it at https://drive.google.com/file/d/1SXHClPIWu2eC0xuQjUmllC8t6fBtO2Zs/view?usp=sharing and add it to the OperonSEQer folder on your local computer. 
+
 ## Install
 
 It is highly recommended to install OperonSEQer in a virtual environment such as conda:
