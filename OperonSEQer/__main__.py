@@ -274,7 +274,12 @@ def formatData(input, outfileName, pred, pickleit=True, path=None):
     '''
     format the data by log transforming p values and dropping NA
     '''
-    df=pd.read_csv(input, delimiter = '\t')
+    if pred == False:
+        df=pd.read_csv(input, delimiter = '\t', names = ['SysName1','SysName2','meanCov1','sdCov1','meanCov2','sdCov2','meanInt','sdInt','Distance','Strand1','Strand2','Length1','Length2','LengthInt','KWs','KWp','KWAIs','KWAIp','KWBIs','KWBIp','KWABs','KWABp'])
+        df.loc[(df['Strand1'] == df['Strand2']), 'strandMatch'] = 1
+        df['strandMatch'] = df['strandMatch'].fillna(0)
+    else:
+        df=pd.read_csv(input, delimiter = '\t')
     
     df['KWp']+=1e-300
     df['KWAIp']+=1e-300
